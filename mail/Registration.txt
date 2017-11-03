@@ -1,0 +1,223 @@
+package controller;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.sql.SQLException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import dbcalls.CompanyRegistration;
+import dbcalls.InsertRecruiter;
+
+import pojo.Company;
+import pojo.Individual;
+import test.SendEmail;
+
+
+/**
+ * Servlet implementation class Register
+ */
+@WebServlet("/Register")
+public class RecruiterRegister extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+
+	//Individual individual = null ;
+
+
+	boolean newRecruiterAdded = false ;
+
+	HttpSession session = null ;
+
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public RecruiterRegister() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+	}
+
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+			
+		
+
+		String type = request.getParameter("type") ;
+		System.out.println("Type is ::::: " + type );
+
+		session = request.getSession(true);
+		session.setAttribute("RecruiterExist", null);		
+
+	
+		
+		
+		if(type.equalsIgnoreCase("individual")){
+			// IF TYPE IS SET INDIVIDUAL
+
+			Individual individual = null ; // pojo of Individual
+
+			String firstName = request.getParameter("firstname") ;
+			String lastName = request.getParameter("lastname") ;
+			String email = request.getParameter("email") ;
+			long contact = Long.parseLong( request.getParameter("contact") );
+			String password = request.getParameter("password") ;
+			String password1 = request.getParameter("password1") ;
+				
+			
+			// Validation to check if the fields are empty and/or password mismatch
+			if( !firstName.equals("") && !lastName.equals("") && !email.equals("") && contact!=0 && !password.equals("") && !password1.equals("") && password.equals(password1) )
+			{
+//				System.out.println("Type is : " + type );
+//				System.out.println("\n\n");
+//				System.out.println("Data is ::::::: ");
+//				System.out.println();
+//				System.out.println(firstName + "" + lastName + "" + email + "" + contact + "" + password + "" + password1);
+
+				individual = new Individual();
+				//individual = new Individual();
+
+				individual.setFirstName(firstName);
+				individual.setLastName(lastName);
+				individual.setEmail(email);
+				individual.setContact(contact);
+				individual.setPassword(password);
+				
+			/*	String Subject="Mail varification";
+				String trabaajo_id="jobsforshubham1@gmail.com";
+				String trabaajo_password="Shubham@123";
+				String test="Hello "+firstName+"Click here for varification Trabaajo";
+				
+				*/
+				try{
+					newRecruiterAdded = InsertRecruiter.addRecruiter( individual , type );
+
+					if( !newRecruiterAdded ){ 
+						// Recruiter already exists
+						session.setAttribute("RecruiterExist", "User already exists");
+						response.sendRedirect("Recruiter_register.jsp");
+					}else{
+						//
+						/*boolean mailsuccess = false ;
+						try{
+							mailsuccess=SendEmail.send(trabaajo_id, trabaajo_password, email, Subject, test);
+							if(!mailsuccess){
+								System.out.println("Not sent");
+							}
+							else{
+								System.out.println("Send");
+							}
+						}catch (Exception e) {
+							e.printStackTrace();
+						}*/
+						response.sendRedirect("Recruiter_login.jsp");
+					}
+				}catch(SQLException e){
+					e.printStackTrace();
+				}catch(Exception e){
+					e.printStackTrace();
+				}
+
+			}else{
+
+				session.setAttribute("individualRegistrationValidation", "Some fields are empty and/or password mismatch");
+				response.sendRedirect("Recruitment_register.jsp");
+			}
+
+		}else{
+			// IF TYPE IS SET COMPANY
+			
+			System.out.println("\n** Inside company 'if' **\n");
+
+			boolean companyAdded = false ;
+			Company company = null ;
+
+			String companyName = request.getParameter("companyname") ;
+			String companyURL = request.getParameter("companyurl") ;
+			String firstName = request.getParameter("firstname") ;
+			String lastName = request.getParameter("lastname") ;
+			String email = request.getParameter("email") ;
+			String contact = request.getParameter("contact") ;
+			String password = request.getParameter("password") ;
+			String password1 = request.getParameter("password1") ;
+
+			if(
+				!companyName.equals("") && !companyURL.equals("") &&
+				!firstName.equals("") && !lastName.equals("") &&
+				!email.equals("") && !contact.equals("") &&
+				!password.equals("") && !password1.equals("") &&
+				password.equals(password1)
+			){
+//				System.out.println("Data is :::::: \n\n\n");
+//				System.out.println(companyName + "\n" + companyURL + "\n" + companyBranch +"\n"+ companyCountry + "\n" + firstName + "\n" + lastName + "\n" + email + "\n" + contact + "\n" + password + "\n" + password1);
+
+				company = new Company();
+
+				company.setCompanyName(companyName);
+				company.setCompanyURL(companyURL);
+				company.setFirstName(firstName);
+				company.setLastName(lastName);
+				company.setEmail(email);
+				company.setContact( Long.parseLong(contact) );
+				company.setPassword(password);
+
+				System.out.println("................... Perfect so far ...................");
+					
+				String Subject="Mail varification";
+				String trabaajo_id="jobsforshubham1@gmail.com";
+				String trabaajo_password="Shubham@123";
+				String message="Hello "+firstName+"<a href=http://127.0.0.1:8085/Trabaajo/Recruiter_login1.jsp?userid="+email+">Pls Click Here for Verifcation</a></h1> Trabaajo";
+				
+				
+				
+				try{
+					companyAdded = CompanyRegistration.addCompany(request , session , company, type);
+
+					if( companyAdded ){
+						//SINCE ADDITION IN DB IS SUCCESSFULLY DONE , NOW REDIRECT THE PAGE
+						//TO LOGIN PAGE
+						boolean mailsuccess = false ;
+						try{
+							mailsuccess=SendEmail.send(trabaajo_id, trabaajo_password, email, Subject, message);
+							if(!mailsuccess){
+								System.out.println("Not sent");
+							}
+							else{
+								System.out.println("Send");
+							}
+						}catch (Exception e) {
+							e.printStackTrace();
+						}
+						response.sendRedirect("Recruiter_login.jsp");
+					}else{
+						//RECRUITER EXISTS , HENCE CAN'T REGISTER
+						session.setAttribute("RecruiterExist", "User already exists");
+						response.sendRedirect("Recruiter_register.jsp");
+					}
+				}catch( Exception e ){
+					e.printStackTrace();
+				}
+
+			}else{
+				session.setAttribute("companyRegistrationValidation", "Some fields are empty and/or password mismatch") ;
+			}
+
+		}
+
+	}
+
+}
